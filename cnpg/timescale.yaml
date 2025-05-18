@@ -1,0 +1,55 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: timescaledb-cluster-pg15
+  namespace: default
+spec:
+  instances: 1
+  imageCatalogRef:
+    apiGroup: postgresql.cnpg.io
+    kind: ImageCatalog
+    name: cloudnative-pg-timescaledb-pg15
+    major: 15
+  postgresUID: 1000
+  postgresGID: 1000
+  resources:
+    requests:
+      cpu: 1
+      memory: 1Gi
+    limits:
+      cpu: 2
+      memory: 7Gi
+
+  postgresql:
+    shared_preload_libraries:
+    - 'timescaledb'
+    parameters:
+      max_wal_size: "2GB"
+      max_wal_senders: "3"
+      wal_level: "replica"
+
+    pg_hba:
+      - host all all all scram-sha-256
+
+  backup:
+    barmanObjectStore:
+      destinationPath: "https://<your storage account name>.blob.core.windows.net/timescaleshowcase"
+      azureCredentials:
+        storageSasToken:
+          name: blob-sas
+          key: sas
+  
+  bootstrap:
+    initdb:
+      database: dev
+      owner: myuser
+      secret: 
+        name: app-user
+      postInitApplicationSQLRefs:
+        configMapRefs:
+        - name: init-schema
+          key: init-schema.sql
+
+  storage:
+    size: 30Gi
+    storageClass: managed-csi

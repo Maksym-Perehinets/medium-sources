@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: init-schema
+data:
+  init-schema.sql: |
+    CREATE EXTENSION IF NOT EXISTS timescaledb;
+
+    CREATE TABLE device_metrics (
+        time        TIMESTAMPTZ       NOT NULL,
+        device_id   TEXT              NOT NULL,
+        temperature DOUBLE PRECISION  NULL,
+        humidity    DOUBLE PRECISION  NULL
+    );
+
+    SELECT create_hypertable('device_metrics', by_range('time'));
+
+    INSERT INTO device_metrics (time, device_id, temperature, humidity) VALUES
+        (NOW() - INTERVAL '10 minutes', 'device_A', 25.5, 60.1),
+        (NOW() - INTERVAL '10 minutes', 'device_B', 22.3, 55.9),
+        (NOW() - INTERVAL '8 minutes',  'device_A', 25.7, 60.5),
+        (NOW() - INTERVAL '6 minutes',  'device_B', 22.4, 56.0),
+        (NOW() - INTERVAL '4 minutes',  'device_A', 25.9, 61.0),
+        (NOW() - INTERVAL '4 minutes',  'device_C', 19.5, 70.2),
+        (NOW() - INTERVAL '2 minutes',  'device_B', 22.6, 56.3),
+        (NOW(),                        'device_A', 26.0, 61.2),
+        (NOW(),                        'device_C', 19.8, 70.0);
+    
+    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE device_metrics TO myuser;
